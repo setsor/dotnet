@@ -1,5 +1,38 @@
 # dotnet/dotnet - Home of the .NET VMR
 
+> [!IMPORTANT]
+> ## FreeBSD 15 x64 community build
+>
+> This fork publishes an **unofficial community build of .NET 10 for FreeBSD 15 x64**, based on the upstream `dotnet/dotnet` tag `v10.0.112`.
+>
+> Current validated build:
+>
+> - **.NET SDK:** 10.0.112
+> - **Microsoft.NETCore.App:** 10.0.12
+> - **Microsoft.AspNetCore.App:** 10.0.12
+> - **Architecture:** x86_64 / amd64
+> - **RID:** `freebsd-x64`
+> - **FreeBSD rootfs used for the build:** 15.1-RELEASE
+> - **Source branch:** `freebsd15-v10.0.112`
+> - **Source commit:** `e901d50bad`
+> - **Release:** [v10.0.112-freebsd15-x64](https://github.com/setsor/dotnet/releases/tag/v10.0.112-freebsd15-x64)
+>
+> The release archive has been tested natively on **FreeBSD 15.1-RELEASE amd64** and deployed on **OPNsense 26.7.4_1 / FreeBSD 15**. Validation included .NET console build/run, ASP.NET Core/Kestrel, Technitium DNS Server 15.6, dnsdist-to-Technitium DNS operation, service restart, reboot, and LAN DNS resolution.
+>
+> Download the prebuilt SDK from the release page:
+>
+> `dotnet-sdk-10.0.112-freebsd-x64.tar.gz`
+>
+> SHA256:
+>
+> `a24bbe5eda077eb89b0ea2e08a05595dc34ea7958e47e93ae396948c83936d48`
+>
+> The FreeBSD-specific source change is intentionally small: `eng/common/cross/build-rootfs.sh` is extended with a `freebsd15` target using `15.1-RELEASE` and ABI `15`.
+>
+> For installation instructions, required FreeBSD packages, OPNsense/OpenSSL 3.5 notes, validation details, and the exact source-build procedure, see **[FREEBSD.md](FREEBSD.md)**.
+>
+> This binary distribution is **not an official Microsoft build**. The repository remains a fork of the upstream [.NET VMR](https://github.com/dotnet/dotnet), and upstream licensing and component licenses continue to apply.
+
 This repository is a **Virtual Monolithic Repository (VMR)** which includes all the source code and infrastructure needed to build the .NET SDK.
 
 What this means:
