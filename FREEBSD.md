@@ -176,3 +176,38 @@ single-worker source-build attempt. This limits exposure to the
 confirmed multicore IPC defect; it is not a code fix and must not
 be presented as one. No fix has yet been applied to the source tree.
 
+
+
+## Native 10.0.113: single-CPU diagnostic build (2026-11-14)
+
+A subsequent attempt used `DOTNET_PROCESSOR_COUNT=1` and
+`-maxcpucount:1` without applying patches. It passed the earlier
+MSBuild node-failure point but **did not complete**. Unlike the first
+run, this failed during NuGet restore in `source-build-assets`, with
+22 errors and no new MSBuild failure report. The previous
+`MSBuild_pid-4835_*.failure.txt` dated 17:24 belongs to the first run.
+
+Primary errors:
+- `NU1101`: missing platform-specific packages
+  `runtime.freebsd-x64.microsoft.netcore.ilasm` and
+  `runtime.freebsd-x64.microsoft.netcore.ildasm`.
+- `NU1603`: `Microsoft.Build.Tasks.Core` and
+  `Microsoft.Build.Utilities.Core` require version `18.0.11`
+  but NuGet restored `18.0.35` instead (warning treated as error).
+- `MSB3073` in the parent build only propagates the failing
+  source-build-assets invocation.
+
+The upstream v10.0.113 `src/source-build-assets/eng/Version.Details.props`
+defines `MicrosoftNETCoreILAsmPackageVersion=10.0.13`,
+`MicrosoftNETCoreILDAsmPackageVersion=10.0.13`, and MSBuild package
+version `18.0.35`. The observed `18.0.11` requirement must therefore
+be traced through the generated package/version props rather than
+overriding versions blindly. FreeBSD is a community platform, so
+native ILAsm/ILDAsm packages may not exist in Microsoft's public feeds.
+
+**Next gate:** inspect exact package filenames and versions in
+the verified 10.0.112 artifact archive and bootstrap SDK's
+`library-packs`, then inspect the generated
+`artifacts/obj/PackageVersions/PackageVersions.source-build-assets.props`.
+Do not suppress `NU1603`, rename package versions, or restart the
+full build until the package provenance/version mismatch is understood.
