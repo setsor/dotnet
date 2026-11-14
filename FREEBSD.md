@@ -142,3 +142,37 @@ Next investigation in the VM:
 `pkg search` for existing native SDK packages, the bootstrap package
 provenance, and missing FreeBSD-native development libraries. Record
 the results before choosing any patch set or executing `build.sh`.
+
+
+## Native 10.0.113 bootstrap build: first failure and documented upstream bug
+
+On 2026-11-14, the **unmodified** upstream `v10.0.113` build was
+started in the FreeBSD 15.1 VM with SDK 10.0.112 and the matching
+verified source-built artifacts, using `--source-build --with-sdk
+--with-packages`. Initial source-only toolset initialization,
+SDK resolver build, and server shutdown all succeeded.
+
+The later `source-build-assets` stage failed with `MSB4166`
+(child MSBuild node exited) and follow-on `MSB4242`.
+`/tmp/MSBuildTemp/MSBuild_pid-4835_a9c89349e85344ed845e64b28f73a4f6.failure.txt`
+records `System.IO.IOException: Broken pipe`, socket error 32,
+in `NodeEndpointOutOfProcBase.RunReadLoop`. No new core dump or
+kernel signal was confirmed for this build. Do not confuse the earlier
+OpenSSL SIGABRT tests with this failure.
+
+This closely matches the documented FreeBSD 15 multicore issue
+[dotnet/dotnet#4226](https://github.com/dotnet/dotnet/issues/4226).
+The underlying MSBuild IPC bug assumes that one stream read receives
+a complete message; the OS can return fewer bytes without error.
+Upstream [dotnet/msbuild#14997](https://github.com/dotnet/msbuild/pull/14997)
+merged a partial-read fix into MSBuild main on 2026-10-06; the
+servicing-source snapshot in v10.0.113/v10.0.115 does not contain the
+relevant fix. The separate abandoned PR #14479 was split into #14997
+(merged) and #14998 (not merged at this audit).
+
+**Next diagnostic gate:** verify that `DOTNET_PROCESSOR_COUNT=1`
+is recognized by the FreeBSD bootstrap SDK, then perform one controlled
+single-worker source-build attempt. This limits exposure to the
+confirmed multicore IPC defect; it is not a code fix and must not
+be presented as one. No fix has yet been applied to the source tree.
+
