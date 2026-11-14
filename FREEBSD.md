@@ -244,3 +244,32 @@ contents of that generated file and the effective NuGet config still
 need examination. **Do not rename old `.nupkg` files as 10.0.13 or
 suppress NU1603.** Determine the native tool bootstrap path and NuGet
 feed configuration before choosing a targeted repair.
+
+
+### Root cause of stale NuGet config on second build (2026-11-14)
+
+Read-only inspection after the second failure showed:
+- The original `src/source-build-assets/NuGet.config` and generated
+  `artifacts/obj/source-build-assets/NuGet.config` were byte-identical
+  (`cmp` exit 0), both timestamped 2026-11-14 16:56:22.
+- The generated `artifacts/obj/source-build-assets/UpdateNuGetConfig.complete`
+  existed, timestamped 2026-11-14 17:23:58.
+- The generated config had only the upstream online package sources,
+  with **no** `previously-source-built` feed.
+- All six specifically requested previous-version MSBuild and native
+  ILAsm/ILDAsm packages exist in the verified local bootstrap archive.
+
+In `repo-projects/Directory.Build.targets`, `UpdateNuGetConfig`
+depends on `CopyNuGetConfig` and uses the
+`UpdateNuGetConfig.complete` incremental output marker.
+The observations are consistent with a subsequent invocation
+re-copying the original configuration while skipping the update target
+because the marker was newer than its MSBuild project input.
+
+**Controlled corrective test:** preserve/move only
+`artifacts/obj/source-build-assets/UpdateNuGetConfig.complete`
+outside the source tree, then rerun once with the same validated
+FreeBSD 15 bootstrap and single-CPU configuration. Inspect the generated
+NuGet config for the actual previous-source-built feed before treating
+any subsequent restore result as meaningful. This is an incremental
+build-state reset, **not a source patch**. Not yet verified by a new run.
