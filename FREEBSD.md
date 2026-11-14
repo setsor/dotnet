@@ -211,3 +211,36 @@ the verified 10.0.112 artifact archive and bootstrap SDK's
 `artifacts/obj/PackageVersions/PackageVersions.source-build-assets.props`.
 Do not suppress `NU1603`, rename package versions, or restart the
 full build until the package provenance/version mismatch is understood.
+
+
+### Package inventory after the second failure
+
+Read-only inspection of the extracted, SHA256-verified
+`Private.SourceBuilt.Artifacts.10.0.112-servicing.26422.108.freebsd-x64`
+located the following **actual** `.nupkg` files:
+
+- `Microsoft.Build.Tasks.Core.18.0.11.nupkg`
+- `Microsoft.Build.Utilities.Core.18.0.11.nupkg`
+- `Microsoft.NETCore.ILAsm.10.0.12.nupkg`
+- `Microsoft.NETCore.ILDAsm.10.0.12.nupkg`
+- `runtime.freebsd-x64.Microsoft.NETCore.ILAsm.10.0.12.nupkg`
+- `runtime.freebsd-x64.Microsoft.NETCore.ILDAsm.10.0.12.nupkg`
+
+The checked-out upstream `v10.0.113`
+`src/source-build-assets/eng/Version.Details.props` requests MSBuild
+packages `18.0.35` and ILAsm/ILDAsm `10.0.13`, which is newer
+than the packages in the previous release's artifacts.
+
+NuGet's reported source list for the failures included the prior SDK's
+`library-packs` directory and Microsoft feeds, **not** the extracted
+`/home/builder/bootstrap/packages-10.0.112` directory. The
+`PreviouslySourceBuiltNupkgCacheDir` parameter seen in the log is
+used for build provenance/tracking; it does not by itself prove the
+directory was included as a NuGet restore source.
+
+The grep for four specific version-property names returned no entries
+in generated `PackageVersions.source-build-assets.props`. The actual
+contents of that generated file and the effective NuGet config still
+need examination. **Do not rename old `.nupkg` files as 10.0.13 or
+suppress NU1603.** Determine the native tool bootstrap path and NuGet
+feed configuration before choosing a targeted repair.
