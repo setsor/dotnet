@@ -2,7 +2,7 @@
 
 ## Purpose and status
 
-**Status: preparation; native build not yet run or validated.**
+**Status: native build environment prepared; the 10.0.112 bootstrap and matching previous source-built artifacts are SHA256-verified. Native builds of 10.0.113 and 10.0.115 have not yet run.**
 
 Build .NET SDK **10.0.115**, Microsoft.NETCore.App **10.0.15** and
 Microsoft.AspNetCore.App **10.0.15** natively on **FreeBSD 15.1 amd64**
@@ -70,6 +70,37 @@ fallback, **not the initial deliverable**.
       and ASP.NET Core/Kestrel startup.
 - [ ] Test Technitium against the candidate runtime in an isolated environment.
 - [ ] Produce a release archive with SHA256, build provenance and restore notes.
+
+
+## Verified bootstrap inputs (FreeBSD 15.1 VM, 2026-11-14)
+
+Source Build requires two distinct inputs, whose versions must agree with
+the upstream source tree's `global.json` and `eng/Versions.props`.
+
+For intermediate upstream `dotnet/dotnet@v10.0.113`:
+- Git tag resolves to `4099f83977f4d29604a9aeb971fb0a7bc1d5f699`.
+- `global.json` requires SDK `10.0.112`.
+- `eng/Versions.props` requires source-built packages
+  `10.0.112-servicing.26422.108`.
+- SDK `10.0.112` is downloaded from the project's
+  [previous FreeBSD 15 release](https://github.com/setsor/dotnet/releases/tag/v10.0.112-freebsd15-x64).
+  SHA256: `a24bbe5eda077eb89b0ea2e08a05595dc34ea7958e47e93ae396948c83936d48`.
+- Source-built packages were downloaded from the official FreeBSD distfiles
+  mirror (`pkg.freebsd.org/ports-distfiles/dotnet/`).
+  SHA256: `7aab7f18a9db58684e6206f5958f065224633b8867133fb023df037f5080313a`.
+- Packages extracted under `/home/builder/bootstrap/packages-10.0.112`.
+- SDK extracted under `/home/builder/bootstrap/dotnet-10.0.112`.
+- Native FreeBSD 15 `dotnet --info`, `dotnet msbuild -version`, and
+  `dotnet build-server shutdown --msbuild` succeed with
+  `DOTNET_OPENSSL_VERSION_OVERRIDE=35`. The override is needed because
+  FreeBSD 15 base OpenSSL is `/usr/lib/libssl.so.35`.
+- Build from upstream 10.0.113 is **not yet validated**; a real .NET console
+  project and the native build remain to be executed.
+
+For final upstream `v10.0.115`, `global.json` and `eng/Versions.props`
+require SDK `10.0.113` and previously source-built artifacts
+`10.0.113-servicing.26504.104`. Thus 10.0.113 is an explicit
+intermediate bootstrap, not the final release deliverable.
 
 ## Release policy
 
