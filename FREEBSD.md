@@ -79,3 +79,35 @@ community builds**, not official Microsoft binaries.
 
 References: [Microsoft v10.0.115 source release](https://github.com/dotnet/dotnet/releases/tag/v10.0.115),
 [FreeBSD build background](https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/freebsd-requirements.md).
+
+
+## FreeBSD 15 source compatibility audit (2026-11-14)
+
+Source basis: upstream `v10.0.115`, checked against the current
+[FreeBSD Ports `lang/dotnet/files`](https://github.com/freebsd/freebsd-ports/tree/main/lang/dotnet/files).
+The patches below are **candidates for review**, not applied changes.
+No patch has been copied into this branch.
+
+| Area | Observed in upstream v10.0.115 | FreeBSD Ports reference | Status |
+|---|---|---|---|
+| MSBuild node IPC | `NodeProviderOutOfProcBase.cs` uses one asynchronous header read; `NodeEndpointOutOfProcBase.cs` still checks short reads | FreeBSD Ports patches based on msbuild PR #14479 | Review whether upstream requires the partial-read fix before native build |
+| MSBuild failure-node shutdown | Existing shutdown behavior differs from Ports' guarded shutdown | Ports `BuildManager.cs` patch based on PR #14479 | Review alongside IPC changes; never suppress command failures |
+| CoreCLR PAL | `StackString()` does not initialize its NUL terminator | Ports `stackstring.hpp` patch | Review native correctness independently |
+| Process enumeration | FreeBSD `Interop.Process.cs` still has original exception and native-buffer handling | Ports `Interop.Process.cs` patch | Review under FreeBSD 15 |
+| Native socket event registration | kqueue/EV_RECEIPT code differs from Ports' socket patch | Ports `pal_networking.c` patch | Review under FreeBSD 15 |
+| OpenSSL | FreeBSD Ports can force `OPENSSL_ROOT_DIR=/usr` for base SSL | Ports conditional `extra-patch-base-openssl` | **Conditional**, not automatically required if the selected SSL provider is in `/usr/local` |
+
+The Ports recipe currently targets SDK 10.0.114 (not this release)
+and builds using a previous SDK 10.0.112 bootstrap. It is a useful
+implementation reference but does not establish that this older bootstrap
+is sufficient for `v10.0.115`.
+
+**Bootstrap acceptance rule:** resolve the version and provenance of
+bootstrap SDK and matching source-built artifacts before running the
+full build. A successful `dotnet --version` alone does not establish
+that MSBuild and worker-process communication are stable.
+
+Next investigation in the VM:
+`pkg search` for existing native SDK packages, the bootstrap package
+provenance, and missing FreeBSD-native development libraries. Record
+the results before choosing any patch set or executing `build.sh`.
