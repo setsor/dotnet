@@ -327,3 +327,32 @@ These are **source-code backports**, whereas OpenSSL override, LLVM,
 libunwind, and generated incremental-marker resets are **build
 environment or generated-state corrections**. None of these
 imply an already successful native build of 10.0.113 or 10.0.115.
+
+
+### 2026-11-15 — retry6: generated NuGet feed staleness
+
+The native v10.0.113 retry6 passed the previous LLVM tool detection;
+its runtime bootstrap progressed into CMake probes and built for roughly
+20 minutes. It then failed NuGet restore in the built Arcade SDK's
+`tools/Tools.proj`: `NU1603` could not find
+`Microsoft.DotNet.Build.Tasks.Feed 10.0.0-dev` and selected an unrelated
+11.0.0 prerelease version.
+
+The exact `Microsoft.DotNet.Build.Tasks.Feed.10.0.0-dev.nupkg`
+exists under both `artifacts/packages/Release/NonShipping/arcade/`
+and `src/arcade/artifacts/packages/Release/NonShipping/`; this is a
+feed configuration problem, not an absent package. The generated
+`artifacts/obj/runtime/NuGet.config` contained no Arcade or
+`previously-source-built` feeds; its timestamp (2026-11-14 16:55)
+predated `UpdateNuGetConfig.complete` (2026-11-15 00:26).
+The `UpdateNuGetConfig` target previously had an incremental marker
+whose freshness could not guarantee that `CopyNuGetConfig` had not
+subsequently replaced the configured file with the original.
+
+**Committed fix in `repo-projects/Directory.Build.targets`:**
+remove incremental `Inputs`/`Outputs` from `UpdateNuGetConfig`,
+keeping `CopyNuGetConfig` and the existing NuGet source mapping tasks.
+Every invocation now reapplies the local source-built package feeds,
+rather than trusting an outdated marker. This is a tracked code fix
+in the source-build orchestration, **not yet verified** by a complete
+successful retry. Preserve the compiled artifacts for incremental builds.
