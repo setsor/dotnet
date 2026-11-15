@@ -2,7 +2,7 @@
 
 ## Purpose and status
 
-**Status: native build environment prepared; the 10.0.112 bootstrap and matching previous source-built artifacts are SHA256-verified. Native builds of 10.0.113 and 10.0.115 have not yet run.**
+**Status (2026-11-15): .NET 10.0.112 bootstrap and previous source-built artifacts verified; native 10.0.113 bootstrap builds have run but have not yet succeeded; native 10.0.115 has not been built. Upstream-source backports for F# UpdateXlf and MSBuild partial header reads are now committed on both FreeBSD 15 branches.**
 
 Build .NET SDK **10.0.115**, Microsoft.NETCore.App **10.0.15** and
 Microsoft.AspNetCore.App **10.0.15** natively on **FreeBSD 15.1 amd64**
@@ -273,3 +273,57 @@ FreeBSD 15 bootstrap and single-CPU configuration. Inspect the generated
 NuGet config for the actual previous-source-built feed before treating
 any subsequent restore result as meaningful. This is an incremental
 build-state reset, **not a source patch**. Not yet verified by a new run.
+
+
+## Update 2026-11-15 — native 10.0.113 failures and committed fixes
+
+A dedicated intermediate branch now exists:
+[`freebsd15-v10.0.113`](https://github.com/setsor/dotnet/tree/freebsd15-v10.0.113)
+at the official v10.0.113 commit with two upstream fixes. Its
+[`FREEBSD.md`](https://github.com/setsor/dotnet/blob/freebsd15-v10.0.113/FREEBSD.md)
+provides the reproducible native bootstrap command and failure history.
+
+**Corrections to earlier investigation:** the generated
+`PackageVersions.source-build-assets.Previous.props` explicitly
+requires the previous source-built versions MSBuild **18.0.11** and
+ILAsm/ILDAsm **10.0.12**. The previously-suspected mismatch with the
+upstream *current* 18.0.35/10.0.13 versions was not the restore cause.
+The actual problem was a stale incremental NuGet-config marker;
+regenerating `UpdateNuGetConfig` added the correct local feed and
+allowed the build to progress.
+
+The first subsequent `source-build-assets` failure was not a C#
+source issue: ILAsm could not start because
+`libunwind-x86_64.so.11` was absent. Installed
+`libunwind-devel-g20261022` from FreeBSD Ports alongside the
+existing ABI 8 package; both ABI 11 libraries now resolve with
+`ldd`. A separate Application Insights restore failure was caused
+by a stale `ApplyPatches.complete` marker for its generated inner
+clone. The already-supplied Microsoft patches remove the prebuilt
+`Microsoft.SourceLink.GitHub` reference and raise
+`System.Diagnostics.DiagnosticSource` to 8.0.0.
+
+During retry5, `runtime` failed at CMake configure because
+`llvm-link` was not on PATH. `llvm21-lite` is installed and its
+toolchain executables verified at `/usr/local/llvm21/bin`;
+the next build shell must export this path. In the same retry,
+F# built several outputs but failed with
+`FSharp.Core.fsproj: MSB4057: UpdateXlf does not exist`,
+followed by `MSB4181`.
+
+**Two upstream fixes have now been committed to this 10.0.115 branch**:
+
+1. FSharp source-only `UpdateXlfOnBuild=false` after Arcade targets
+   import, matching the fix in `dotnet/fsharp` main
+   for [dotnet/fsharp#19961](https://github.com/dotnet/fsharp/issues/19961).
+2. MSBuild partial pipe header-read accumulation, backported from
+   merged [dotnet/msbuild#14997](https://github.com/dotnet/msbuild/pull/14997)
+   and adapted to the servicing source member `_pipeStream`.
+   This patch does **not** change the old bootstrap SDK 10.0.112's
+   MSBuild implementation. Keep the tested single-worker bootstrap
+   configuration until a newer built SDK is validated.
+
+These are **source-code backports**, whereas OpenSSL override, LLVM,
+libunwind, and generated incremental-marker resets are **build
+environment or generated-state corrections**. None of these
+imply an already successful native build of 10.0.113 or 10.0.115.
