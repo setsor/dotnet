@@ -165,11 +165,12 @@
   <UsingTask TaskName="Microsoft.DotNet.UnifiedBuild.Tasks.RemoveInternetSourcesFromNuGetConfig" AssemblyFile="$(MicrosoftDotNetUnifiedBuildTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.DotNet.UnifiedBuild.Tasks.RemoveBlockedAuditSourcesFromNuGetConfig" AssemblyFile="$(MicrosoftDotNetUnifiedBuildTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.DotNet.UnifiedBuild.Tasks.UpdateNuGetConfigPackageSourcesMappings" AssemblyFile="$(MicrosoftDotNetUnifiedBuildTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <!-- CopyNuGetConfig can overwrite the generated NuGet.config with its original
+       on subsequent builds. Reapply the per-repository source-built feeds each time:
+       the .complete timestamp alone cannot prove the generated config is current. -->
   <Target Name="UpdateNuGetConfig"
           DependsOnTargets="ResolveProjectReferences;CopyNuGetConfig;GetRepositoryReferenceInfo"
-          Condition="'$(NuGetConfigFile)' != ''"
-          Inputs="$(MSBuildProjectFullPath)"
-          Outputs="$(BaseIntermediateOutputPath)UpdateNuGetConfig.complete">
+          Condition="'$(NuGetConfigFile)' != ''">
     <PropertyGroup>
       <!-- Dev innerloop opt-in feed: /p:ExtraRestoreSourcePath=... -->
       <ExtraSourcesNuGetSourceName>ExtraSources</ExtraSourcesNuGetSourceName>
