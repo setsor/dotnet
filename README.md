@@ -33,6 +33,13 @@
 >
 > This binary distribution is **not an official Microsoft build**. The repository remains a fork of the upstream [.NET VMR](https://github.com/dotnet/dotnet), and upstream licensing and component licenses continue to apply.
 
+> [!NOTE]
+> ## November 2026 native FreeBSD build
+>
+> A **separate native FreeBSD 15.1** source build produced .NET SDK **10.0.115** and runtime/ASP.NET Core **10.0.15**, validated on OPNsense with Technitium DNS Server **15.6.2**. See **[FREEBSD-NATIVE-10.0.115.md](FREEBSD-NATIVE-10.0.115.md)**.
+>
+> The older **10.0.112** GitHub release above has **not** been replaced; the November artifact is documented but **not published as a new GitHub release**.
+>
 This repository is a **Virtual Monolithic Repository (VMR)** which includes all the source code and infrastructure needed to build the .NET SDK.
 
 What this means:
