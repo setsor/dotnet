@@ -38,7 +38,16 @@ The tested OPNsense derivative package changed **only** the runtime's explicit d
 + openssl35: { origin: "security/openssl35", version: "3.5.9" }
 ```
 
-Use [`repack-runtime-opnsense.sh`](repack-runtime-opnsense.sh) to reproduce that change on a staging root **containing the original installed runtime**. It deliberately does not rebuild .NET, modify OpenSSL libraries, or touch OPNsense. Compare manifest and payload after repacking. The result is a derived package and needs a separate repository catalog.
+Use [`repack_runtime_opnsense.py`](repack_runtime_opnsense.py) to reproduce that change on a staging root **containing the original installed runtime**. It deliberately does not rebuild .NET, modify OpenSSL libraries, or touch OPNsense. Compare manifest and payload after repacking. Example (run on `dotnet-build`, not OPNsense):
+
+```sh
+python3 packaging/freebsd15/repack_runtime_opnsense.py \\
+  /usr/local/poudriere/data/packages/151amd64-default-opnsense_dotnet/All/dotnet-runtime10-10.0.15.pkg \\
+  /usr/local/poudriere/test-jails/technitium-pkg-final \\
+  /root/dotnet10-opnsense-package/output-new
+```
+
+The script is committed for review; re-run it against the validated staging root and compare the result with the recorded manifest and package hash before using its output. It refuses to overwrite a non-empty output directory. The result is a derived package and needs a separate repository catalog.
 
 Recorded test derivative SHA256 (local build, not a published release):
 ```
